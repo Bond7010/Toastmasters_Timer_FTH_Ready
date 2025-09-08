@@ -3,72 +3,62 @@
 <head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>Toastmasters Timer — FTH Ready</title>
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cg fill='none'%3E%3Ccircle cx='32' cy='32' r='30' stroke='%23004165' stroke-width='4'/%3E%3Cpath d='M32 14v18l10 6' stroke='%23ff0000' stroke-width='5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/g%3E%3C/svg%3E">
-
-<!-- System fonts only (FTH/iframe friendly) -->
+<title>Toastmasters Timer â€” FTH Ready</title>
+<!-- Simple favicon depicting a timer hand -->
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cg fill='none'%3E%3Ccircle cx='32' cy='32' r='30' stroke='%23004165' stroke-width='4'/%3E%3Cpath d='M32 14v18l10 6' stroke='%23ff0000' stroke-width='5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/g%3E%3C/svg%3E"/>
 <style>
   :root{
+    /* Toastmasters brand palette */
     --tm-maroon:#772432; --tm-blue:#004165;
     --tm-gray:#A9B2B1;  --tm-yellow:#F2DF74;
     --white:#fff; --black:#111;
-
-    /* vivid card colors */
-    --green: rgba(0,200,0,.45);
-    --yellow: rgba(255,215,0,.55);
-    --red: rgba(255,0,0,.45);
+    /* vivid timer square colours */
+    --green: rgba(0,200,0,.50);
+    --yellow: rgba(255,215,0,.60);
+    --red: rgba(255,0,0,.50);
   }
   *{box-sizing:border-box}
   html,body{height:100%}
-  body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,"Helvetica Neue",Arial;color:var(--black);background:#fafbfc}
-
+  body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,'Helvetica Neue',Arial;color:var(--black);background:#fafbfc}
   header{
     background:linear-gradient(90deg,var(--tm-blue),var(--tm-maroon));
     color:#fff; padding:12px 16px; display:flex; gap:10px; align-items:center; justify-content:space-between; flex-wrap:wrap;
-    box-shadow:0 2px 10px rgba(0,0,0,.15)
+    box-shadow:0 2px 10px rgba(0,0,0,.15);
   }
   .brand{display:flex;align-items:center;gap:10px;font-weight:800}
   .badge{width:34px;height:34px;border-radius:50%;display:grid;place-items:center;background:var(--tm-yellow);color:#222;font-weight:900}
   .btn{appearance:none;border:0;border-radius:12px;padding:9px 12px;font-weight:700;cursor:pointer;background:#fff;color:#222;box-shadow:0 2px 6px rgba(0,0,0,.12)}
+  .btn[disabled]{opacity:.5;cursor:not-allowed;filter:grayscale(20%)}
   .btn.primary{background:var(--tm-yellow)}
-  .btn.ghost{background:transparent;border:2px solid rgba(255,255,255,.85);color:#fff}
-
   main{max-width:1120px;margin:18px auto;padding:0 14px;display:grid;gap:16px}
   .grid{display:grid;grid-template-columns:1.05fr .95fr;gap:16px}
   @media (max-width: 980px){.grid{grid-template-columns:1fr}}
-
   .card{background:#fff;border-radius:16px;box-shadow:0 8px 24px rgba(0,0,0,.08);overflow:hidden}
-  .face{position:relative;min-height:360px;display:grid;place-items:center;background:#f3f6f9}
+  .face{position:relative;min-height:360px;display:grid;place-items:center;background:#f3f6f9;overflow:hidden}
   .square{
-    position:absolute;inset:0;margin:auto;aspect-ratio:1/1;max-width:min(85vmin,700px);max-height:min(85vmin,520px);
-    border-radius:18px; background:transparent; transition:background-color .3s ease;
+    position:absolute;top:50%;left:50%;
+    width:min(90%,520px);height:auto;aspect-ratio:1/1;
+    transform:translate(-50%,-50%);
+    border-radius:18px;background:transparent;transition:background-color .28s ease;
+    pointer-events:none;
   }
   .digits{position:relative;font-weight:900;letter-spacing:1px;font-size:clamp(3rem,10vw,7.4rem);text-shadow:0 2px 0 rgba(255,255,255,.85);user-select:none}
   .chip{position:absolute;right:12px;top:12px;background:rgba(255,255,255,.92);border-radius:999px;padding:6px 10px;font-weight:800;box-shadow:0 2px 8px rgba(0,0,0,.12)}
   .panel{padding:14px;border-top:4px solid var(--tm-blue);display:grid;gap:12px}
-
   .row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
   label{font-weight:800}
-  input[type="text"], select{
-    padding:9px 10px;border:1px solid #d5dbe3;border-radius:10px;min-width:120px
-  }
+  input[type='text'], select{padding:9px 10px;border:1px solid #d5dbe3;border-radius:10px;min-width:120px}
+  input[disabled]{background:#f3f3f3;color:#666}
   .kbd{display:inline-block;border:1px solid #d0d4da;border-bottom-width:2px;border-radius:6px;padding:2px 6px;font-family:ui-monospace,Consolas,Menlo,monospace}
   .help{font-size:.92rem;color:#444;background:#f6f7f9;border-left:4px solid var(--tm-maroon);padding:10px;border-radius:8px}
-
-  /* Records table */
   table{width:100%;border-collapse:collapse}
   th,td{padding:8px 10px;border-bottom:1px solid #e8ecf1;text-align:left}
   th{background:#f1f4f8}
   .q-badge{display:inline-block;padding:4px 10px;border-radius:999px;font-weight:800;cursor:pointer}
   .q-yes{background:var(--yellow);color:#222}
   .q-no{background:rgba(255,0,0,.18);color:#b00000;border:1px solid #f3b3b3}
-
-  footer{max-width:1120px;margin:6px auto 28px;padding:0 14px;color:#555;font-size:.92rem}
-  .muted{opacity:.75}
-
-  /* Print styles for PDF (records only) */
   @media print{
-    header, .timerWrap, .controls, .help, .no-print{display:none !important}
+    header,.timerWrap,.controls,.help,.no-print{display:none!important}
     .recordsWrap{box-shadow:none;border:0}
     body{background:#fff}
   }
@@ -78,17 +68,15 @@
   <header>
     <div class="brand"><div class="badge">TM</div><div>Toastmasters Timer</div></div>
     <div class="row controls">
-      <button id="btn-fullscreen" class="btn ghost" title="F">Fullscreen</button>
-      <button id="btn-help" class="btn ghost">Help</button>
-      <button id="btn-print" class="btn ghost">Export PDF</button>
-      <button id="reset" class="btn">Reset (R)</button>
-      <button id="start" class="btn primary">Start (Space)</button>
+      <button id="btn-print" class="btn" title="Export to PDF">Export PDF</button>
+      <button id="reset" class="btn" title="Reset">Reset</button>
+      <button id="start" class="btn primary" title="Start" disabled>Start</button>
     </div>
   </header>
 
   <main>
     <div class="grid">
-      <!-- TIMER -->
+      <!-- Timer area -->
       <section class="card timerWrap" id="tm-focus" tabindex="0" aria-label="Timer">
         <div class="face" id="face">
           <div class="square" id="square"></div>
@@ -97,57 +85,36 @@
         </div>
         <div class="panel">
           <div class="row">
+            <label>Speaker Name</label>
+            <input id="speaker" type="text" placeholder="e.g., Jane Doe" autocomplete="off"/>
+            <button id="mark" class="btn" title="Mark a split">Mark</button>
+            <button id="addRecord" class="btn" title="Add to table">Add Record</button>
+          </div>
+          <div class="row">
             <label for="preset">Preset</label>
             <select id="preset">
-              <option value="TT">Table Topics · 1–2</option>
-              <option value="EV">Evaluation · 2–3</option>
-              <option value="S57">Speech · 5–7</option>
-              <option value="S79">Speech · 7–9</option>
-              <option value="CUST">Custom</option>
+              <option value="TT">Table Topics Â· 1â€“2</option>
+              <option value="EV">Evaluation Â· 2â€“3</option>
+              <option value="S57">Speech Â· 5â€“7</option>
+              <option value="S79">Speech Â· 7â€“9</option>
             </select>
-
-            <label class="sr-only" for="mode" style="position:absolute;left:-9999px">Mode</label>
-            <select id="mode" title="Timing mode">
-              <option value="up">Count Up</option>
-              <option value="down">Count Down</option>
-            </select>
-
-            <label style="display:flex;gap:6px;align-items:center">
-              <input id="beep" type="checkbox" checked/> Sound
-            </label>
+            <label>Green</label><input id="gMin" type="text" value="01:00" disabled title="Set by preset"/>
+            <label>Yellow</label><input id="yMin" type="text" value="01:30" disabled title="Set by preset"/>
+            <label>Red</label><input id="rMin" type="text" value="02:00" disabled title="Set by preset"/>
           </div>
-
-          <div class="row">
-            <label>Green</label><input id="gMin" type="text" value="01:00" pattern="^\\d{1,2}:\\d{2}$"/>
-            <label>Yellow</label><input id="yMin" type="text" value="01:30" pattern="^\\d{1,2}:\\d{2}$"/>
-            <label>Red</label><input id="rMin" type="text" value="02:00" pattern="^\\d{1,2}:\\d{2}$"/>
-          </div>
-
-          <div class="row">
-            <label>Speaker Name</label>
-            <input id="speaker" type="text" placeholder="e.g., Jane Doe"/>
-            <button id="mark" class="btn">Mark</button>
-            <button id="addRecord" class="btn">Add Record</button>
-          </div>
-
           <div class="help">
-            <span class="kbd">Space</span> start/pause · <span class="kbd">R</span> reset ·
-            <span class="kbd">F</span> fullscreen · <span class="kbd">U/D</span> modes ·
-            <span class="kbd">1–5</span> presets (1=TT,2=EV,3=5-7,4=7-9,5=Custom)
+            <span class="kbd">Space</span> start/pause Â· <span class="kbd">R</span> reset Â·
+            <span class="kbd">F</span> fullscreen Â· <span class="kbd">1â€“4</span> presets (1=TT,2=EV,3=5-7,4=7-9)<br/>
+            Always counts up from 0:00. Name is required to enable Start.
           </div>
         </div>
       </section>
-
-      <!-- RECORDED TIMES -->
+      <!-- Records area -->
       <section class="card recordsWrap">
         <div class="panel">
-          <div class="row"><strong>Recorded Times</strong></div>
+          <div class="row"><strong>Recorded Times</strong> <span class="muted">(click the badge to toggle Qualified)</span></div>
           <table id="records">
-            <thead>
-              <tr>
-                <th>#</th><th>Speaker</th><th>Speech Type</th><th>Time</th><th>Qualified</th>
-              </tr>
-            </thead>
+            <thead><tr><th>#</th><th>Speaker</th><th>Speech Type</th><th>Time</th><th>Qualified</th></tr></thead>
             <tbody></tbody>
           </table>
         </div>
@@ -155,208 +122,114 @@
     </div>
   </main>
 
-  <footer class="no-print">
-    <div class="muted">Click inside the timer once to enable keyboard shortcuts (iframe focus).</div>
-  </footer>
-
 <script>
+/* Encapsulated timer logic */
 (function(){
-  // ===== helpers =====
   const $ = id => document.getElementById(id);
   const pad = n => (n<10?'0':'')+n;
   const toSec = mmss => { const [m,s]=(mmss||'0:00').split(':').map(Number); return (m||0)*60 + (s||0); };
-  const toMMSS = s  => { s=Math.max(0,Math.round(s)); const m=Math.floor(s/60), t=s%60; return pad(m)+':'+pad(t); };
-
-  // ===== elements =====
-  const digits=$('digits'), square=$('square'), status=$('status'),
-        gEl=$('gMin'), yEl=$('yMin'), rEl=$('rMin'), modeEl=$('mode'),
-        presetEl=$('preset'), startBtn=$('start'), resetBtn=$('reset'),
-        markBtn=$('mark'), addBtn=$('addRecord'), speakerEl=$('speaker'),
-        beepEl=$('beep'), focusBox=$('tm-focus');
-
+  const toMMSS = s => { s=Math.max(0,Math.round(s)); const m=Math.floor(s/60), t=s%60; return pad(m)+':'+pad(t); };
+  // DOM refs
+  const digits=$('digits'), square=$('square'), status=$('status');
+  const gEl=$('gMin'), yEl=$('yMin'), rEl=$('rMin');
+  const presetEl=$('preset'), startBtn=$('start'), resetBtn=$('reset');
+  const markBtn=$('mark'), addBtn=$('addRecord'), speakerEl=$('speaker');
+  const btnPrint=$('btn-print');
   const recordsTbody = $('records').querySelector('tbody');
-  const btnPrint = $('btn-print'), btnHelp=$('btn-help'), btnFull=$('btn-fullscreen');
-
-  // ===== state =====
-  let running=false, startTs=0, acc=0, raf=0, laps=[];
-
-  // ===== audio (WebAudio beep) =====
-  let actx=null;
-  function beep(){
-    if(!beepEl.checked) return;
-    try{
-      actx = actx || new (window.AudioContext||window.webkitAudioContext)();
-      const osc = actx.createOscillator(), g=actx.createGain();
-      osc.type='sine'; osc.frequency.value=880;
-      g.gain.value=.0001; g.gain.exponentialRampToValueAtTime(.22, actx.currentTime+.01);
-      g.gain.exponentialRampToValueAtTime(.0001, actx.currentTime+.28);
-      osc.connect(g).connect(actx.destination);
-      osc.start(); osc.stop(actx.currentTime+.3);
-    }catch(e){}
+  // Timer state
+  let running=false, startTs=0, acc=0, raf=0;
+  // Predefined speech presets
+  const PRESETS={
+    TT:{g:'01:00', y:'01:30', r:'02:00'},
+    EV:{g:'02:00', y:'02:30', r:'03:00'},
+    S57:{g:'05:00', y:'06:00', r:'07:00'},
+    S79:{g:'07:00', y:'08:00', r:'09:00'}
+  };
+  function updateStartEnabled(){
+    const ok=(speakerEl.value||'').trim().length>0;
+    startBtn.disabled=!ok;
   }
-
-  // ===== prefs =====
-  function savePrefs(){
-    const p={preset:presetEl.value,mode:modeEl.value,g:gEl.value,y:yEl.value,r:rEl.value,beep:beepEl.checked};
-    localStorage.setItem('tm_timer_prefs', JSON.stringify(p));
-  }
+  function savePrefs(){ localStorage.setItem('tm_timer_prefs', JSON.stringify({preset:presetEl.value})); }
   function loadPrefs(){
-    try{
-      const p=JSON.parse(localStorage.getItem('tm_timer_prefs')||'{}');
-      if(p.preset) presetEl.value=p.preset;
-      if(p.mode) modeEl.value=p.mode;
-      if(p.g) gEl.value=p.g; if(p.y) yEl.value=p.y; if(p.r) rEl.value=p.r;
-      if(typeof p.beep==='boolean') beepEl.checked=p.beep;
-      applyPreset(presetEl.value);
-    }catch(e){}
+    try{ const p=JSON.parse(localStorage.getItem('tm_timer_prefs')||'{}'); if(p.preset && PRESETS[p.preset]) presetEl.value=p.preset; }
+    catch(e){}
+    applyPreset(presetEl.value,true);
   }
-
-  function applyPreset(code){
-    const set=(g,y,r)=>{gEl.value=g; yEl.value=y; rEl.value=r;};
-    if(code==='TT') set('01:00','01:30','02:00');
-    else if(code==='EV') set('02:00','02:30','03:00');
-    else if(code==='S57') set('05:00','06:00','07:00');
-    else if(code==='S79') set('07:00','08:00','09:00');
-    savePrefs(); paint(0);
+  function applyPreset(code,onLoad=false){
+    const pre=PRESETS[code]||PRESETS.TT;
+    gEl.value=pre.g; yEl.value=pre.y; rEl.value=pre.r;
+    if(!onLoad) savePrefs();
+    paint(0);
   }
-
-  function thresholds(){
-    return { g:toSec(gEl.value), y:toSec(yEl.value), r:toSec(rEl.value) };
-  }
-
-  // ===== core timer =====
+  function thresholds(){ return { g:toSec(gEl.value), y:toSec(yEl.value), r:toSec(rEl.value) }; }
   function now(){ return performance.now(); }
-  function curSec(){ const ms = running ? (acc+(now()-startTs)) : acc; return Math.floor(ms/1000); }
-
-  function start(){ if(running){ pause(); return; } running=true; startTs=now(); status.textContent='Running'; startBtn.textContent='Pause (Space)'; tick(); }
-  function pause(){ if(!running) return; running=false; acc+=now()-startTs; cancelAnimationFrame(raf); status.textContent='Paused'; startBtn.textContent='Start (Space)'; savePrefs(); }
-  function reset(){ running=false; startTs=0; acc=0; laps=[]; cancelAnimationFrame(raf); status.textContent='Ready'; startBtn.textContent='Start (Space)'; paint(0); }
-  function mark(){ const t=curSec(); laps.push(t); }
-
-  function colorFor(sec, disp, mode, t){
-    // return background & hit status (for beep)
-    if(mode==='up'){
-      if(sec>=t.r) return {bg:'var(--red)', hit:true};
-      if(sec>=t.y) return {bg:'var(--yellow)', hit:false};
-      if(sec>=t.g) return {bg:'var(--green)', hit:false};
-      return {bg:'transparent', hit:false};
-    }else{
-      if(disp<=0) return {bg:'var(--red)', hit:true};
-      if(disp <= (t.r - t.y)) return {bg:'var(--yellow)', hit:false};
-      if(disp <= (t.r - t.g)) return {bg:'var(--green)', hit:false};
-      return {bg:'transparent', hit:false};
-    }
+  function curSec(){ const ms=running ? (acc+(now()-startTs)) : acc; return Math.floor(ms/1000); }
+  function start(){
+    if(startBtn.disabled){ alert('Please enter the Speaker Name before starting.'); return; }
+    if(running){ pause(); return; }
+    running=true; startTs=now(); status.textContent='Running'; startBtn.textContent='Pause'; tick();
   }
-
+  function pause(){ if(!running) return; running=false; acc+=now()-startTs; cancelAnimationFrame(raf); status.textContent='Paused'; startBtn.textContent='Start'; }
+  function reset(){ running=false; startTs=0; acc=0; cancelAnimationFrame(raf); status.textContent='Ready'; startBtn.textContent='Start'; paint(0); }
+  function mark(){ /* record split, not shown */ }
   function paint(force=null){
-    const t = thresholds();
-    const s = force!==null ? force : curSec();
-    const mode = modeEl.value;
-
-    let disp = s;
-    if(mode==='down') disp = Math.max(0, t.r - s);
-
-    digits.textContent = toMMSS(disp);
-
-    const {bg, hit} = colorFor(s, disp, mode, t);
-    square.style.backgroundColor = bg;
-    if(hit) beep();
+    const t=thresholds();
+    const s=force!==null ? force : curSec();
+    digits.textContent=toMMSS(s);
+    let bg='transparent';
+    if(s>=t.r) bg='var(--red)';
+    else if(s>=t.y) bg='var(--yellow)';
+    else if(s>=t.g) bg='var(--green)';
+    square.style.backgroundColor=bg;
   }
-
   function tick(){ paint(); raf=requestAnimationFrame(tick); }
-
-  // ===== records =====
-  const records = [];
+  // Qualification: time qualifies if within [green-30s, red+30s]
+  function isQualified(sec){ const t=thresholds(); const lower=Math.max(0,t.g-30); const upper=t.r+30; return sec>=lower && sec<=upper; }
+  // Records list
+  const records=[];
   function addRecord(){
-    const name = (speakerEl.value||'').trim();
-    const typeMap = {TT:'Table Topics 1–2', EV:'Evaluation 2–3', S57:'Speech 5–7', S79:'Speech 7–9', CUST:'Custom'};
-    const type = typeMap[presetEl.value] || 'Custom';
-
-    const t = thresholds();
-    const seconds = (modeEl.value==='down') ? Math.max(0, t.r - curSec()) : curSec();
-    const mmss = toMMSS(seconds);
-
-    // Qualified = time between green and red inclusive (regardless of yellow)
-    const qualified = (modeEl.value==='up')
-        ? (seconds>=t.g && seconds<=t.r)
-        : (seconds>0 ? (seconds <= t.r && seconds >= (t.r - t.g)) : false); // down-mode equivalence
-
-    const row = {name, type, mmss, qualified};
-    records.push(row);
-    renderRecords();
-    speakerEl.value='';
+    const code=presetEl.value;
+    const name=(speakerEl.value||'').trim();
+    const typeMap={TT:'Table Topics 1â€“2', EV:'Evaluation 2â€“3', S57:'Speech 5â€“7', S79:'Speech 7â€“9'};
+    const type=typeMap[code]||'Speech';
+    const seconds=curSec(); const mmss=toMMSS(seconds);
+    const q=isQualified(seconds);
+    records.push({name,type,mmss,qualified:q});
+    renderRecords(); speakerEl.value=''; updateStartEnabled();
   }
-
   function renderRecords(){
     recordsTbody.innerHTML='';
     records.forEach((r,i)=>{
       const tr=document.createElement('tr');
-      const qClass = r.qualified ? 'q-yes' : 'q-no';
-      const qText  = r.qualified ? 'Qualified' : 'Not Qualified';
-      tr.innerHTML = `
-        <td>${i+1}</td>
-        <td>${r.name||'-'}</td>
-        <td>${r.type}</td>
-        <td>${r.mmss}</td>
-        <td><span class="q-badge ${qClass}" data-idx="${i}">${qText}</span></td>
-      `;
+      const qClass=r.qualified ? 'q-yes' : 'q-no';
+      const qText=r.qualified ? 'Qualified' : 'Not Qualified';
+      tr.innerHTML=`<td>${i+1}</td><td>${r.name||'-'}</td><td>${r.type}</td><td>${r.mmss}</td><td><span class="q-badge ${qClass}" data-idx="${i}">${qText}</span></td>`;
       recordsTbody.appendChild(tr);
     });
   }
-
-  // click to toggle qualified badge
-  recordsTbody.addEventListener('click', (e)=>{
-    const el = e.target.closest('.q-badge'); if(!el) return;
-    const idx = +el.dataset.idx; if(isNaN(idx)) return;
-    records[idx].qualified = !records[idx].qualified;
-    renderRecords();
-  });
-
-  // ===== events =====
-  startBtn.addEventListener('click', start);
-  resetBtn.addEventListener('click', reset);
-  markBtn.addEventListener('click', mark);
-  addBtn.addEventListener('click', addRecord);
-  presetEl.addEventListener('change', e=>applyPreset(e.target.value));
-  [gEl,yEl,rEl,modeEl,beepEl].forEach(el=>el.addEventListener('change', savePrefs));
-
-  // global keyboard (works when iframe is focused)
+  recordsTbody.addEventListener('click',(e)=>{
+    const el=e.target.closest('.q-badge'); if(!el) return; const idx=+el.dataset.idx; if(isNaN(idx)) return; records[idx].qualified=!records[idx].qualified; renderRecords(); });
+  // Event listeners
+  presetEl.addEventListener('change',(e)=>applyPreset(e.target.value));
+  startBtn.addEventListener('click',start);
+  resetBtn.addEventListener('click',reset);
+  markBtn.addEventListener('click',mark);
+  addBtn.addEventListener('click',addRecord);
+  speakerEl.addEventListener('input',updateStartEnabled);
+  btnPrint.addEventListener('click',()=>window.print());
+  function isTypingTarget(ev){ const t=ev.target; return t && (t.tagName==='INPUT' || t.tagName==='SELECT' || t.tagName==='TEXTAREA' || t.isContentEditable); }
   function onKey(e){
-    if(e.repeat) return;
-    const k = e.key.toLowerCase();
-    if(k===' '){ e.preventDefault(); start(); }
+    if(e.repeat) return; if(isTypingTarget(e)) return;
+    const k=e.key.toLowerCase();
+    if(k===' '){ e.preventDefault(); if(startBtn.disabled){ alert('Please enter the Speaker Name before starting.'); return; } start(); }
     else if(k==='r'){ reset(); }
-    else if(k==='f'){ try{ if(!document.fullscreenElement){ document.documentElement.requestFullscreen?.(); } else { document.exitFullscreen?.(); } }catch(_){} }
-    else if(k==='u'){ modeEl.value='up'; savePrefs(); }
-    else if(k==='d'){ modeEl.value='down'; savePrefs(); }
-    else if(['1','2','3','4','5'].includes(k)){
-      const map = { '1':'TT', '2':'EV', '3':'S57', '4':'S79', '5':'CUST' };
-      presetEl.value = map[k]; applyPreset(map[k]);
-    }
+    else if(k==='f'){ try{ if(!document.fullscreenElement){ document.documentElement.requestFullscreen?.(); } else { document.exitFullscreen?.(); } } catch(_){} }
+    else if(['1','2','3','4'].includes(k)){ const map={'1':'TT','2':'EV','3':'S57','4':'S79'}; presetEl.value=map[k]; applyPreset(map[k]); }
   }
-  document.addEventListener('keydown', onKey);
-  window.addEventListener('keydown', onKey);
-
-  // focus handling (for iframe use)
-  focusBox.addEventListener('click', ()=>focusBox.focus());
-  focusBox.addEventListener('keydown', ()=>{}); // keep focus
-
-  // help + print
-  btnHelp.addEventListener('click', ()=>alert(
-`Shortcuts:
-Space  Start/Pause
-R      Reset
-F      Fullscreen
-U / D  Count Up / Count Down
-1–5    Presets (1=TT,2=EV,3=5–7,4=7–9,5=Custom)
-
-Tip: Click once inside the timer (iframe focus) before using shortcuts.`
-  ));
-  btnPrint.addEventListener('click', ()=>window.print());
-  btnFull.addEventListener('click', ()=>document.documentElement.requestFullscreen?.());
-
-  // boot
-  loadPrefs(); reset();
+  document.addEventListener('keydown',onKey);
+  window.addEventListener('keydown',onKey);
+  // Initialisation
+  loadPrefs(); updateStartEnabled(); reset();
 })();
 </script>
 </body>

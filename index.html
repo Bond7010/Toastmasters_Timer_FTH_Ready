@@ -109,7 +109,6 @@
 
               <label for="meetingDate">Meeting Date</label>
               <input id="meetingDate" type="date" title="Pick meeting date"/>
-              <span class="hint" id="dateHint"></span>
             </div>
           </div>
 
@@ -172,7 +171,7 @@
   // New elements for club number and meeting date inputs and print meta
   const clubNoEl = document.getElementById('clubNo');
   const dateEl   = document.getElementById('meetingDate');
-  const dateHint = document.getElementById('dateHint');
+  // dateHint element was removed (no hint text)
   const pClub    = document.getElementById('pClub');
   const pDate    = document.getElementById('pDate');
 
@@ -383,15 +382,10 @@
     clubNoEl.value = digits;
     savePrefs();
   });
-  // Meeting date: initialize, hint update, auto open picker on focus
+  // Meeting date: initialize to today's date if empty, open picker on focus
   if(!dateEl.value){ dateEl.value = todayISO(); }
-  function updateDateHint(){
-    const hint = fmtShort(dateEl.value);
-    dateHint.textContent = hint ? '(' + hint + ')' : '';
-  }
-  dateEl.addEventListener('change', () => { updateDateHint(); savePrefs(); });
+  dateEl.addEventListener('change', () => { savePrefs(); });
   dateEl.addEventListener('focus', () => { try{ if(dateEl.showPicker) dateEl.showPicker(); }catch(e){} });
-  updateDateHint();
 
   function isTypingTarget(ev){
     const t = ev.target;

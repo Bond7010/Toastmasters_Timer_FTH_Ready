@@ -1,457 +1,363 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Toastmasters Timer — FTH Ready</title>
-  <meta name="description" content="A web-based Toastmasters meeting timer that follows brand colors and works on FreeToastHost (single-file, offline-capable).">
-  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cg fill='none'%3E%3Ccircle cx='32' cy='32' r='30' stroke='%23004165' stroke-width='4'/%3E%3Cpath d='M32 14v18l10 6' stroke='%23772432' stroke-width='5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/g%3E%3C/svg%3E">
-  <!-- Google Fonts: Montserrat (headings) & Source Sans Pro (body) -->
-  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@600;700&family=Source+Sans+Pro:wght@400;600&display=swap" rel="stylesheet">
-  <style>
-    :root{
-      --tm-maroon:#772432;
-      --tm-blue:#004165;
-      --tm-gray:#A9B2B1;
-      --tm-yellow:#F2DF74;
-      --tm-black:#000000;
-      --tm-white:#ffffff;
-    }
-    *{box-sizing:border-box}
-    html,body{height:100%}
-    body{
-      margin:0;
-      font-family:'Source Sans Pro',system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,'Helvetica Neue',Arial;
-      color:#111;
-      background:
-        radial-gradient(1200px 800px at 120% -10%, rgba(0,65,101,0.08), transparent 60%),
-        radial-gradient(1200px 800px at -20% 110%, rgba(119,36,50,0.08), transparent 60%),
-        linear-gradient(180deg,#f8f9fa, #ffffff);
-      min-height:100%;
-    }
-    header{
-      background:linear-gradient(90deg,var(--tm-blue), var(--tm-maroon));
-      color:#fff;
-      padding:14px 20px;
-      display:flex;
-      align-items:center;
-      justify-content:space-between;
-      flex-wrap:wrap;
-      gap:10px;
-      box-shadow:0 2px 10px rgba(0,0,0,0.15);
-    }
-    .brand-title{
-      font-family:'Montserrat',sans-serif;
-      font-size:1.15rem;
-      letter-spacing:0.5px;
-      display:flex;
-      align-items:center;
-      gap:10px;
-    }
-    .brand-badge{
-      display:inline-grid;
-      place-items:center;
-      width:36px;height:36px;
-      border-radius:50%;
-      background:var(--tm-yellow);
-      color:#222;
-      font-weight:700;
-      font-family:'Montserrat',sans-serif;
-      box-shadow:inset 0 -2px 0 rgba(0,0,0,0.15);
-    }
-    .actions{
-      display:flex;gap:8px;flex-wrap:wrap;align-items:center
-    }
-    .btn{
-      appearance:none;border:none;cursor:pointer;
-      padding:10px 14px;border-radius:12px;
-      font-weight:600;font-size:0.95rem;
-      background:#fff;color:#222;
-      box-shadow:0 2px 6px rgba(0,0,0,0.1);
-      transition:transform .04s ease, box-shadow .2s ease, background .2s ease;
-    }
-    .btn:hover{transform:translateY(-1px);box-shadow:0 4px 12px rgba(0,0,0,0.15)}
-    .btn:active{transform:translateY(0)}
-    .btn.primary{background:var(--tm-yellow);}
-    .btn.outline{background:transparent;border:2px solid rgba(255,255,255,0.8);color:#fff}
-    main{max-width:1100px;margin:20px auto;padding:0 16px}
-    .card{
-      background:#fff;border-radius:16px;
-      box-shadow:0 8px 24px rgba(0,0,0,0.08);
-      overflow:hidden;
-    }
-    .grid{display:grid;grid-template-columns:1.1fr 1fr;gap:20px}
-    @media (max-width: 920px){ .grid{grid-template-columns:1fr; } }
-    .timer-face{
-      position:relative;
-      min-height:350px;
-      display:grid;place-items:center;
-      background:#f6f7f8;
-      background-image:linear-gradient(180deg,rgba(0,0,0,0.02), transparent);
-    }
-    .color-backdrop{
-      position:absolute;inset:0;z-index:0;
-      transition:background-color .35s ease;
-    }
-    .time-readout{
-      position:relative;z-index:1;
-      font-family:'Montserrat', sans-serif;
-      font-size:clamp(3rem, 10vw, 7rem);
-      font-weight:700;
-      letter-spacing:1px;
-      color:#111;
-      text-shadow:0 2px 0 rgba(255,255,255,0.8);
-      user-select:none;
-    }
-    .status-chip{
-      position:absolute;
-      right:14px;top:14px;
-      background:rgba(255,255,255,0.88);
-      border-radius:999px;padding:6px 10px;
-      font-weight:600;font-size:.85rem;color:#222;
-      box-shadow:0 2px 8px rgba(0,0,0,0.12);
-    }
-    .panel{
-      padding:16px 16px 20px;
-      display:grid;gap:14px;
-      border-top:4px solid var(--tm-blue);
-    }
-    .row{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
-    label{font-weight:600}
-    select, input[type="number"], input[type="text"]{
-      appearance:none;
-      padding:10px 12px;border-radius:10px;border:1px solid #d7dbe0;
-      background:#fff;min-width:140px;font-size:0.98rem;
-    }
-    input[type="checkbox"]{transform:scale(1.2)}
-    .kbd{
-      display:inline-block;min-width:28px;text-align:center;
-      border:1px solid #d0d4da;border-bottom-width:2px;border-radius:6px;padding:2px 6px;
-      background:#fff;font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
-      margin-left:2px;margin-right:2px;font-size:.9rem
-    }
-    .help{
-      font-size:0.92rem;color:#444;background:#f7f9fb;border-left:4px solid var(--tm-maroon);
-      padding:12px;border-radius:8px;
-    }
-    footer{
-      max-width:1100px;margin:16px auto;padding:0 16px 28px;color:#444;
-      font-size:0.9rem
-    }
-    .muted{color:#666}
-    .pill{display:inline-block;padding:6px 10px;border-radius:999px;background:#eef1f5;margin-right:6px;font-weight:600}
-    .link{color:var(--tm-blue);text-decoration:none;border-bottom:2px solid rgba(0,65,101,0.2)}
-    .link:hover{border-bottom-color:var(--tm-blue)}
-    .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0;}
-  </style>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Toastmasters Timer — FTH Ready</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cg fill='none'%3E%3Ccircle cx='32' cy='32' r='30' stroke='%23004165' stroke-width='4'/%3E%3Cpath d='M32 14v18l10 6' stroke='%23ff0000' stroke-width='5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/g%3E%3C/svg%3E">
+
+<!-- System fonts only (FTH/iframe friendly) -->
+<style>
+  :root{
+    --tm-maroon:#772432; --tm-blue:#004165;
+    --tm-gray:#A9B2B1;  --tm-yellow:#F2DF74;
+    --white:#fff; --black:#111;
+
+    /* vivid card colors */
+    --green: rgba(0,200,0,.45);
+    --yellow: rgba(255,215,0,.55);
+    --red: rgba(255,0,0,.45);
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,"Helvetica Neue",Arial;color:var(--black);background:#fafbfc}
+
+  header{
+    background:linear-gradient(90deg,var(--tm-blue),var(--tm-maroon));
+    color:#fff; padding:12px 16px; display:flex; gap:10px; align-items:center; justify-content:space-between; flex-wrap:wrap;
+    box-shadow:0 2px 10px rgba(0,0,0,.15)
+  }
+  .brand{display:flex;align-items:center;gap:10px;font-weight:800}
+  .badge{width:34px;height:34px;border-radius:50%;display:grid;place-items:center;background:var(--tm-yellow);color:#222;font-weight:900}
+  .btn{appearance:none;border:0;border-radius:12px;padding:9px 12px;font-weight:700;cursor:pointer;background:#fff;color:#222;box-shadow:0 2px 6px rgba(0,0,0,.12)}
+  .btn.primary{background:var(--tm-yellow)}
+  .btn.ghost{background:transparent;border:2px solid rgba(255,255,255,.85);color:#fff}
+
+  main{max-width:1120px;margin:18px auto;padding:0 14px;display:grid;gap:16px}
+  .grid{display:grid;grid-template-columns:1.05fr .95fr;gap:16px}
+  @media (max-width: 980px){.grid{grid-template-columns:1fr}}
+
+  .card{background:#fff;border-radius:16px;box-shadow:0 8px 24px rgba(0,0,0,.08);overflow:hidden}
+  .face{position:relative;min-height:360px;display:grid;place-items:center;background:#f3f6f9}
+  .square{
+    position:absolute;inset:0;margin:auto;aspect-ratio:1/1;max-width:min(85vmin,700px);max-height:min(85vmin,520px);
+    border-radius:18px; background:transparent; transition:background-color .3s ease;
+  }
+  .digits{position:relative;font-weight:900;letter-spacing:1px;font-size:clamp(3rem,10vw,7.4rem);text-shadow:0 2px 0 rgba(255,255,255,.85);user-select:none}
+  .chip{position:absolute;right:12px;top:12px;background:rgba(255,255,255,.92);border-radius:999px;padding:6px 10px;font-weight:800;box-shadow:0 2px 8px rgba(0,0,0,.12)}
+  .panel{padding:14px;border-top:4px solid var(--tm-blue);display:grid;gap:12px}
+
+  .row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+  label{font-weight:800}
+  input[type="text"], select{
+    padding:9px 10px;border:1px solid #d5dbe3;border-radius:10px;min-width:120px
+  }
+  .kbd{display:inline-block;border:1px solid #d0d4da;border-bottom-width:2px;border-radius:6px;padding:2px 6px;font-family:ui-monospace,Consolas,Menlo,monospace}
+  .help{font-size:.92rem;color:#444;background:#f6f7f9;border-left:4px solid var(--tm-maroon);padding:10px;border-radius:8px}
+
+  /* Records table */
+  table{width:100%;border-collapse:collapse}
+  th,td{padding:8px 10px;border-bottom:1px solid #e8ecf1;text-align:left}
+  th{background:#f1f4f8}
+  .q-badge{display:inline-block;padding:4px 10px;border-radius:999px;font-weight:800;cursor:pointer}
+  .q-yes{background:var(--yellow);color:#222}
+  .q-no{background:rgba(255,0,0,.18);color:#b00000;border:1px solid #f3b3b3}
+
+  footer{max-width:1120px;margin:6px auto 28px;padding:0 14px;color:#555;font-size:.92rem}
+  .muted{opacity:.75}
+
+  /* Print styles for PDF (records only) */
+  @media print{
+    header, .timerWrap, .controls, .help, .no-print{display:none !important}
+    .recordsWrap{box-shadow:none;border:0}
+    body{background:#fff}
+  }
+</style>
 </head>
 <body>
   <header>
-    <div class="brand-title">
-      <div class="brand-badge">TM</div>
-      <div>Toastmasters Timer <span class="muted">· FTH Ready</span></div>
-    </div>
-    <div class="actions">
-      <button id="btn-fullscreen" class="btn outline" title="Toggle Fullscreen (F)">Fullscreen</button>
-      <button id="btn-help" class="btn outline" title="Usage & shortcuts">Help</button>
-      <a class="btn primary" href="#" id="btn-install" title="Install as App (PWA)">Install</a>
+    <div class="brand"><div class="badge">TM</div><div>Toastmasters Timer</div></div>
+    <div class="row controls">
+      <button id="btn-fullscreen" class="btn ghost" title="F">Fullscreen</button>
+      <button id="btn-help" class="btn ghost">Help</button>
+      <button id="btn-print" class="btn ghost">Export PDF</button>
+      <button id="reset" class="btn">Reset (R)</button>
+      <button id="start" class="btn primary">Start (Space)</button>
     </div>
   </header>
 
   <main>
-    <div class="card grid">
-      <section class="timer-face" aria-live="polite" aria-atomic="true">
-        <div id="color" class="color-backdrop"></div>
-        <div id="status" class="status-chip">Ready</div>
-        <div id="time" class="time-readout">00:00</div>
+    <div class="grid">
+      <!-- TIMER -->
+      <section class="card timerWrap" id="tm-focus" tabindex="0" aria-label="Timer">
+        <div class="face" id="face">
+          <div class="square" id="square"></div>
+          <div class="chip" id="status">Ready</div>
+          <div class="digits" id="digits">00:00</div>
+        </div>
+        <div class="panel">
+          <div class="row">
+            <label for="preset">Preset</label>
+            <select id="preset">
+              <option value="TT">Table Topics · 1–2</option>
+              <option value="EV">Evaluation · 2–3</option>
+              <option value="S57">Speech · 5–7</option>
+              <option value="S79">Speech · 7–9</option>
+              <option value="CUST">Custom</option>
+            </select>
+
+            <label class="sr-only" for="mode" style="position:absolute;left:-9999px">Mode</label>
+            <select id="mode" title="Timing mode">
+              <option value="up">Count Up</option>
+              <option value="down">Count Down</option>
+            </select>
+
+            <label style="display:flex;gap:6px;align-items:center">
+              <input id="beep" type="checkbox" checked/> Sound
+            </label>
+          </div>
+
+          <div class="row">
+            <label>Green</label><input id="gMin" type="text" value="01:00" pattern="^\\d{1,2}:\\d{2}$"/>
+            <label>Yellow</label><input id="yMin" type="text" value="01:30" pattern="^\\d{1,2}:\\d{2}$"/>
+            <label>Red</label><input id="rMin" type="text" value="02:00" pattern="^\\d{1,2}:\\d{2}$"/>
+          </div>
+
+          <div class="row">
+            <label>Speaker Name</label>
+            <input id="speaker" type="text" placeholder="e.g., Jane Doe"/>
+            <button id="mark" class="btn">Mark</button>
+            <button id="addRecord" class="btn">Add Record</button>
+          </div>
+
+          <div class="help">
+            <span class="kbd">Space</span> start/pause · <span class="kbd">R</span> reset ·
+            <span class="kbd">F</span> fullscreen · <span class="kbd">U/D</span> modes ·
+            <span class="kbd">1–5</span> presets (1=TT,2=EV,3=5-7,4=7-9,5=Custom)
+          </div>
+        </div>
       </section>
-      <section class="panel">
-        <div class="row">
-          <label for="preset">Preset</label>
-          <select id="preset">
-            <option value="TT">Table Topics · 1–2</option>
-            <option value="EV">Evaluation · 2–3</option>
-            <option value="S57">Speech · 5–7</option>
-            <option value="S79">Speech · 7–9</option>
-            <option value="CUST">Custom</option>
-          </select>
 
-          <label class="sr-only" for="mode">Mode</label>
-          <select id="mode" title="Timing mode">
-            <option value="up">Count Up</option>
-            <option value="down">Count Down</option>
-          </select>
-
-          <label class="sr-only" for="beep">Sound</label>
-          <span class="row" style="gap:6px">
-            <input id="beep" type="checkbox" checked/>
-            <span>Sound</span>
-          </span>
-        </div>
-
-        <div class="row">
-          <label>Green (min)</label>
-          <input id="gMin" type="text" value="01:00" pattern="^\\d{1,2}:\\d{2}$" />
-          <label>Yellow (mid)</label>
-          <input id="yMin" type="text" value="01:30" pattern="^\\d{1,2}:\\d{2}$" />
-          <label>Red (max)</label>
-          <input id="rMin" type="text" value="02:00" pattern="^\\d{1,2}:\\d{2}$" />
-        </div>
-
-        <div class="row">
-          <button id="start" class="btn primary">Start (Space)</button>
-          <button id="reset" class="btn">Reset (R)</button>
-          <button id="lap" class="btn">Mark</button>
-          <span id="laps" class="muted"></span>
-        </div>
-
-        <div class="help">
-          <div class="pill">Shortcuts</div>
-          <span class="kbd">Space</span> start/pause ·
-          <span class="kbd">R</span> reset ·
-          <span class="kbd">F</span> fullscreen ·
-          <span class="kbd">1–4</span> presets ·
-          <span class="kbd">U</span>/<span class="kbd">D</span> switch mode.
-          <br/>
-          <strong>Colors:</strong> Green at minimum, Yellow at mid, Red at max. Works for both count up and count down.
+      <!-- RECORDED TIMES -->
+      <section class="card recordsWrap">
+        <div class="panel">
+          <div class="row"><strong>Recorded Times</strong></div>
+          <table id="records">
+            <thead>
+              <tr>
+                <th>#</th><th>Speaker</th><th>Speech Type</th><th>Time</th><th>Qualified</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
         </div>
       </section>
     </div>
   </main>
 
-  <footer>
-    <div>
-      Built for Toastmasters clubs. Brand colors: <span class="pill" style="background:#772432;color:#fff">Maroon #772432</span>
-      <span class="pill" style="background:#004165;color:#fff">Blue #004165</span>
-      <span class="pill" style="background:#A9B2B1">Cool Gray #A9B2B1</span>
-      <span class="pill" style="background:#F2DF74">Happy Yellow #F2DF74</span>
-    </div>
-    <div class="muted">Works offline. Safe for FreeToastHost: single HTML file with inlined CSS/JS. No tracking.</div>
+  <footer class="no-print">
+    <div class="muted">Click inside the timer once to enable keyboard shortcuts (iframe focus).</div>
   </footer>
 
-  <audio id="ding" preload="auto">
-    <source src="data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAESsAACJWAAACABYAAAChAAAAAA==" type="audio/wav">
-  </audio>
+<script>
+(function(){
+  // ===== helpers =====
+  const $ = id => document.getElementById(id);
+  const pad = n => (n<10?'0':'')+n;
+  const toSec = mmss => { const [m,s]=(mmss||'0:00').split(':').map(Number); return (m||0)*60 + (s||0); };
+  const toMMSS = s  => { s=Math.max(0,Math.round(s)); const m=Math.floor(s/60), t=s%60; return pad(m)+':'+pad(t); };
 
-  <script>
-  (function(){
-    // Utility
-    const $ = (id)=>document.getElementById(id);
-    const pad = n => (n<10?'0':'')+n;
-    const toSec = (mmss)=>{
-      const [m,s]=mmss.split(':').map(Number);
-      return m*60 + s;
-    };
-    const toMMSS = (sec)=>{
-      sec = Math.max(0, Math.round(sec));
-      const m = Math.floor(sec/60);
-      const s = sec % 60;
-      return pad(m)+':'+pad(s);
-    };
+  // ===== elements =====
+  const digits=$('digits'), square=$('square'), status=$('status'),
+        gEl=$('gMin'), yEl=$('yMin'), rEl=$('rMin'), modeEl=$('mode'),
+        presetEl=$('preset'), startBtn=$('start'), resetBtn=$('reset'),
+        markBtn=$('mark'), addBtn=$('addRecord'), speakerEl=$('speaker'),
+        beepEl=$('beep'), focusBox=$('tm-focus');
 
-    // Elements
-    const timeEl = $('time');
-    const colorEl = $('color');
-    const statusEl= $('status');
-    const presetEl= $('preset');
-    const modeEl  = $('mode');
-    const gEl = $('gMin'), yEl=$('yMin'), rEl=$('rMin');
-    const startBtn=$('start'), resetBtn=$('reset'), lapBtn=$('lap'), lapsEl=$('laps');
-    const beepEl = $('beep');
-    const ding = $('ding');
+  const recordsTbody = $('records').querySelector('tbody');
+  const btnPrint = $('btn-print'), btnHelp=$('btn-help'), btnFull=$('btn-fullscreen');
 
-    // State
-    let running=false, startTs=0, acc=0, rafId=null, laps=[];
+  // ===== state =====
+  let running=false, startTs=0, acc=0, raf=0, laps=[];
 
-    function loadPrefs(){
-      try{
-        const p = JSON.parse(localStorage.getItem('tm_timer_prefs')||'{}');
-        if(p.preset) presetEl.value=p.preset;
-        if(p.mode) modeEl.value=p.mode;
-        if(p.g) gEl.value=p.g; if(p.y) yEl.value=p.y; if(p.r) rEl.value=p.r;
-        if(typeof p.beep==='boolean') beepEl.checked=p.beep;
-        applyPreset(presetEl.value);
-      }catch(e){}
+  // ===== audio (WebAudio beep) =====
+  let actx=null;
+  function beep(){
+    if(!beepEl.checked) return;
+    try{
+      actx = actx || new (window.AudioContext||window.webkitAudioContext)();
+      const osc = actx.createOscillator(), g=actx.createGain();
+      osc.type='sine'; osc.frequency.value=880;
+      g.gain.value=.0001; g.gain.exponentialRampToValueAtTime(.22, actx.currentTime+.01);
+      g.gain.exponentialRampToValueAtTime(.0001, actx.currentTime+.28);
+      osc.connect(g).connect(actx.destination);
+      osc.start(); osc.stop(actx.currentTime+.3);
+    }catch(e){}
+  }
+
+  // ===== prefs =====
+  function savePrefs(){
+    const p={preset:presetEl.value,mode:modeEl.value,g:gEl.value,y:yEl.value,r:rEl.value,beep:beepEl.checked};
+    localStorage.setItem('tm_timer_prefs', JSON.stringify(p));
+  }
+  function loadPrefs(){
+    try{
+      const p=JSON.parse(localStorage.getItem('tm_timer_prefs')||'{}');
+      if(p.preset) presetEl.value=p.preset;
+      if(p.mode) modeEl.value=p.mode;
+      if(p.g) gEl.value=p.g; if(p.y) yEl.value=p.y; if(p.r) rEl.value=p.r;
+      if(typeof p.beep==='boolean') beepEl.checked=p.beep;
+      applyPreset(presetEl.value);
+    }catch(e){}
+  }
+
+  function applyPreset(code){
+    const set=(g,y,r)=>{gEl.value=g; yEl.value=y; rEl.value=r;};
+    if(code==='TT') set('01:00','01:30','02:00');
+    else if(code==='EV') set('02:00','02:30','03:00');
+    else if(code==='S57') set('05:00','06:00','07:00');
+    else if(code==='S79') set('07:00','08:00','09:00');
+    savePrefs(); paint(0);
+  }
+
+  function thresholds(){
+    return { g:toSec(gEl.value), y:toSec(yEl.value), r:toSec(rEl.value) };
+  }
+
+  // ===== core timer =====
+  function now(){ return performance.now(); }
+  function curSec(){ const ms = running ? (acc+(now()-startTs)) : acc; return Math.floor(ms/1000); }
+
+  function start(){ if(running){ pause(); return; } running=true; startTs=now(); status.textContent='Running'; startBtn.textContent='Pause (Space)'; tick(); }
+  function pause(){ if(!running) return; running=false; acc+=now()-startTs; cancelAnimationFrame(raf); status.textContent='Paused'; startBtn.textContent='Start (Space)'; savePrefs(); }
+  function reset(){ running=false; startTs=0; acc=0; laps=[]; cancelAnimationFrame(raf); status.textContent='Ready'; startBtn.textContent='Start (Space)'; paint(0); }
+  function mark(){ const t=curSec(); laps.push(t); }
+
+  function colorFor(sec, disp, mode, t){
+    // return background & hit status (for beep)
+    if(mode==='up'){
+      if(sec>=t.r) return {bg:'var(--red)', hit:true};
+      if(sec>=t.y) return {bg:'var(--yellow)', hit:false};
+      if(sec>=t.g) return {bg:'var(--green)', hit:false};
+      return {bg:'transparent', hit:false};
+    }else{
+      if(disp<=0) return {bg:'var(--red)', hit:true};
+      if(disp <= (t.r - t.y)) return {bg:'var(--yellow)', hit:false};
+      if(disp <= (t.r - t.g)) return {bg:'var(--green)', hit:false};
+      return {bg:'transparent', hit:false};
     }
-    function savePrefs(){
-      const p = {
-        preset: presetEl.value,
-        mode: modeEl.value,
-        g: gEl.value, y: yEl.value, r: rEl.value,
-        beep: beepEl.checked
-      };
-      localStorage.setItem('tm_timer_prefs', JSON.stringify(p));
-    }
+  }
 
-    function applyPreset(code){
-      const set = (g,y,r)=>{gEl.value=g; yEl.value=y; rEl.value=r;};
-      switch(code){
-        case 'TT': set('01:00','01:30','02:00'); break;
-        case 'EV': set('02:00','02:30','03:00'); break;
-        case 'S57': set('05:00','06:00','07:00'); break;
-        case 'S79': set('07:00','08:00','09:00'); break;
-        default: /* CUST */ break;
-      }
-      savePrefs();
-      paint(); // update backdrop immediately
-    }
+  function paint(force=null){
+    const t = thresholds();
+    const s = force!==null ? force : curSec();
+    const mode = modeEl.value;
 
-    function green(){ return 'rgba(0, 180, 0, .18)'; }
-    function yellow(){ return 'rgba(242, 223, 116, .35)'; }
-    function red(){ return 'rgba(200, 0, 0, .18)'; }
-    function neutral(){ return 'transparent'; }
+    let disp = s;
+    if(mode==='down') disp = Math.max(0, t.r - s);
 
-    function thresholds(){
-      const g=toSec(gEl.value), y=toSec(yEl.value), r=toSec(rEl.value);
-      return {g,y,r};
-    }
+    digits.textContent = toMMSS(disp);
 
-    function now(){ return performance.now(); }
+    const {bg, hit} = colorFor(s, disp, mode, t);
+    square.style.backgroundColor = bg;
+    if(hit) beep();
+  }
 
-    function start(){
-      if(running){ pause(); return; }
-      running=true;
-      startTs = now();
-      statusEl.textContent='Running';
-      startBtn.textContent='Pause (Space)';
-      tick();
-    }
-    function pause(){
-      if(!running) return;
-      running=false;
-      acc += now()-startTs;
-      cancelAnimationFrame(rafId);
-      statusEl.textContent='Paused';
-      startBtn.textContent='Start (Space)';
-      savePrefs();
-    }
-    function reset(){
-      running=false; startTs=0; acc=0; laps=[];
-      lapsEl.textContent='';
-      cancelAnimationFrame(rafId);
-      statusEl.textContent='Ready';
-      startBtn.textContent='Start (Space)';
-      paint(0);
-    }
-    function mark(){
-      const t = currentSeconds();
-      laps.push(t);
-      lapsEl.textContent = 'Marks: ' + laps.map(toMMSS).join(', ');
-    }
+  function tick(){ paint(); raf=requestAnimationFrame(tick); }
 
-    function currentSeconds(){
-      const elapsedMs = running ? (acc + (now()-startTs)) : acc;
-      return Math.floor(elapsedMs/1000);
-    }
+  // ===== records =====
+  const records = [];
+  function addRecord(){
+    const name = (speakerEl.value||'').trim();
+    const typeMap = {TT:'Table Topics 1–2', EV:'Evaluation 2–3', S57:'Speech 5–7', S79:'Speech 7–9', CUST:'Custom'};
+    const type = typeMap[presetEl.value] || 'Custom';
 
-    function paint(forcedSec=null){
-      const {g,y,r} = thresholds();
-      const sec = forcedSec!==null ? forcedSec : currentSeconds();
-      const mode = modeEl.value; // up | down
+    const t = thresholds();
+    const seconds = (modeEl.value==='down') ? Math.max(0, t.r - curSec()) : curSec();
+    const mmss = toMMSS(seconds);
 
-      let displaySec = sec;
-      if(mode==='down'){ displaySec = Math.max(0, r - sec); }
+    // Qualified = time between green and red inclusive (regardless of yellow)
+    const qualified = (modeEl.value==='up')
+        ? (seconds>=t.g && seconds<=t.r)
+        : (seconds>0 ? (seconds <= t.r && seconds >= (t.r - t.g)) : false); // down-mode equivalence
 
-      timeEl.textContent = toMMSS(displaySec);
+    const row = {name, type, mmss, qualified};
+    records.push(row);
+    renderRecords();
+    speakerEl.value='';
+  }
 
-      // color logic
-      let bg = neutral();
-      let shouldBeep = false;
-      if(mode==='up'){
-        if(sec >= r){ bg = red(); shouldBeep = true; }
-        else if(sec >= y){ bg = yellow(); }
-        else if(sec >= g){ bg = green(); }
-        else { bg = neutral(); }
-      }else{ // down
-        if(displaySec <= 0){ bg = red(); shouldBeep = true; }
-        else if(displaySec <= (r - y)){ bg = yellow(); }
-        else if(displaySec <= (r - g)){ bg = green(); }
-        else { bg = neutral(); }
-      }
-      colorEl.style.backgroundColor = bg;
-      if(shouldBeep && beepEl.checked){
-        try{ ding.currentTime=0; ding.play().catch(()=>{}); }catch(e){}
-      }
-    }
-
-    function tick(){
-      paint();
-      rafId = requestAnimationFrame(tick);
-    }
-
-    // events
-    startBtn.addEventListener('click', start);
-    resetBtn.addEventListener('click', reset);
-    lapBtn.addEventListener('click', mark);
-    presetEl.addEventListener('change', e=>applyPreset(e.target.value));
-    [gEl,yEl,rEl,modeEl,beepEl].forEach(el=>el.addEventListener('change', savePrefs));
-
-    document.addEventListener('keydown',(e)=>{
-      if(e.repeat) return;
-      const k = e.key.toLowerCase();
-      if(k===' '){ e.preventDefault(); start(); }
-      else if(k==='r'){ reset(); }
-      else if(k==='f'){ toggleFullscreen(); }
-      else if(k==='u'){ modeEl.value='up'; savePrefs(); }
-      else if(k==='d'){ modeEl.value='down'; savePrefs(); }
-      else if(['1','2','3','4','5'].includes(k)){
-        const map = { '1':'TT', '2':'EV', '3':'S57', '4':'S79', '5':'CUST' };
-        presetEl.value = map[k]; applyPreset(map[k]);
-      }
+  function renderRecords(){
+    recordsTbody.innerHTML='';
+    records.forEach((r,i)=>{
+      const tr=document.createElement('tr');
+      const qClass = r.qualified ? 'q-yes' : 'q-no';
+      const qText  = r.qualified ? 'Qualified' : 'Not Qualified';
+      tr.innerHTML = `
+        <td>${i+1}</td>
+        <td>${r.name||'-'}</td>
+        <td>${r.type}</td>
+        <td>${r.mmss}</td>
+        <td><span class="q-badge ${qClass}" data-idx="${i}">${qText}</span></td>
+      `;
+      recordsTbody.appendChild(tr);
     });
+  }
 
-    // fullscreen
-    function toggleFullscreen(){
-      if(!document.fullscreenElement){
-        document.documentElement.requestFullscreen?.();
-      }else{
-        document.exitFullscreen?.();
-      }
+  // click to toggle qualified badge
+  recordsTbody.addEventListener('click', (e)=>{
+    const el = e.target.closest('.q-badge'); if(!el) return;
+    const idx = +el.dataset.idx; if(isNaN(idx)) return;
+    records[idx].qualified = !records[idx].qualified;
+    renderRecords();
+  });
+
+  // ===== events =====
+  startBtn.addEventListener('click', start);
+  resetBtn.addEventListener('click', reset);
+  markBtn.addEventListener('click', mark);
+  addBtn.addEventListener('click', addRecord);
+  presetEl.addEventListener('change', e=>applyPreset(e.target.value));
+  [gEl,yEl,rEl,modeEl,beepEl].forEach(el=>el.addEventListener('change', savePrefs));
+
+  // global keyboard (works when iframe is focused)
+  function onKey(e){
+    if(e.repeat) return;
+    const k = e.key.toLowerCase();
+    if(k===' '){ e.preventDefault(); start(); }
+    else if(k==='r'){ reset(); }
+    else if(k==='f'){ try{ if(!document.fullscreenElement){ document.documentElement.requestFullscreen?.(); } else { document.exitFullscreen?.(); } }catch(_){} }
+    else if(k==='u'){ modeEl.value='up'; savePrefs(); }
+    else if(k==='d'){ modeEl.value='down'; savePrefs(); }
+    else if(['1','2','3','4','5'].includes(k)){
+      const map = { '1':'TT', '2':'EV', '3':'S57', '4':'S79', '5':'CUST' };
+      presetEl.value = map[k]; applyPreset(map[k]);
     }
-    $('btn-fullscreen').addEventListener('click', toggleFullscreen);
+  }
+  document.addEventListener('keydown', onKey);
+  window.addEventListener('keydown', onKey);
 
-    // Help
-    $('btn-help').addEventListener('click', ()=>{
-      alert(
-`Toastmasters Timer — Quick Help
+  // focus handling (for iframe use)
+  focusBox.addEventListener('click', ()=>focusBox.focus());
+  focusBox.addEventListener('keydown', ()=>{}); // keep focus
 
-Presets:
-  1 Table Topics (1–2)
-  2 Evaluation (2–3)
-  3 Speech (5–7)
-  4 Speech (7–9)
-  5 Custom (edit fields)
+  // help + print
+  btnHelp.addEventListener('click', ()=>alert(
+`Shortcuts:
+Space  Start/Pause
+R      Reset
+F      Fullscreen
+U / D  Count Up / Count Down
+1–5    Presets (1=TT,2=EV,3=5–7,4=7–9,5=Custom)
 
-Shortcuts:
-  Space  Start/Pause
-  R      Reset
-  F      Fullscreen
-  U/D    Count Up / Count Down
-  1–5    Presets
+Tip: Click once inside the timer (iframe focus) before using shortcuts.`
+  ));
+  btnPrint.addEventListener('click', ()=>window.print());
+  btnFull.addEventListener('click', ()=>document.documentElement.requestFullscreen?.());
 
-Colors appear at Green (min), Yellow (mid), Red (max).
-`
-      );
-    });
-
-    // PWA minimal install (works when served over HTTPS)
-    const btnInstall = $('btn-install');
-    let deferredPrompt=null;
-    window.addEventListener('beforeinstallprompt',(e)=>{
-      e.preventDefault(); deferredPrompt=e; btnInstall.style.display='inline-block';
-    });
-    btnInstall.addEventListener('click', async (e)=>{
-      e.preventDefault();
-      if(!deferredPrompt){ alert('Install is available when served over HTTPS.'); return; }
-      deferredPrompt.prompt();
-      await deferredPrompt.userChoice;
-      deferredPrompt=null;
-    });
-
-    // init
-    loadPrefs();
-    reset();
-  })();
-  </script>
+  // boot
+  loadPrefs(); reset();
+})();
+</script>
 </body>
 </html>

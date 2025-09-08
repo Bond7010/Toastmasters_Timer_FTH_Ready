@@ -184,10 +184,18 @@
   const pClub    = document.getElementById('pClub');
   const pDate    = document.getElementById('pDate');
 
-  // Month labels for short display (Sept instead of Sep for 9th month)
+  // Month labels with "Sept" for September
   const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sept','Oct','Nov','Dec'];
   function padNum(n){ return n<10 ? '0'+n : ''+n; }
-  function fmtShort(iso){ const d = new Date(iso); if(!iso||isNaN(d.getTime())) return ''; return months[d.getMonth()] + ' ' + padNum(d.getDate()); }
+  // Format a YYYY-MM-DD string as "Mon DD" without timezone shift
+  function fmtShortLocal(iso){
+    if(!iso || !/^\d{4}-\d{2}-\d{2}$/.test(iso)) return '';
+    const parts = iso.split('-');
+    const m = parseInt(parts[1], 10), d = parseInt(parts[2], 10);
+    if(!m || !d) return '';
+    return months[m-1] + ' ' + padNum(d);
+  }
+  // Default to today's date in ISO (local)
   function todayISO(){ const d=new Date(); const m=padNum(d.getMonth()+1); const dy=padNum(d.getDate()); return d.getFullYear()+'-'+m+'-'+dy; }
 
   let running=false, startTs=0, acc=0, raf=0, laps=[];
@@ -386,9 +394,9 @@
   document.getElementById('btn-print').addEventListener('click', () => {
     // set print meta values based on inputs
     pClub.textContent = clubNoEl.value || '4039';
-    // Use provided date or today's date; display as short form (e.g., Sept 07)
+    // Use provided date or today's date; display as short form locally (e.g., Sept 07)
     const iso = dateEl.value || todayISO();
-    pDate.textContent = fmtShort(iso);
+    pDate.textContent = fmtShortLocal(iso);
     window.print();
   });
   speakerEl.addEventListener('input', () => {

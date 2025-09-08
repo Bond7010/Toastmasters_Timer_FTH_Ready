@@ -43,6 +43,7 @@
   .chip{position:absolute;right:12px;top:12px;background:rgba(255,255,255,.92);border-radius:999px;padding:6px 10px;font-weight:800;box-shadow:0 2px 8px rgba(0,0,0,.12)}
   .panel{padding:14px;border-top:4px solid var(--tm-blue);display:grid;gap:12px}
   .row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+  .row.buttons{justify-content:flex-start;gap:10px}
   label{font-weight:800}
   input[type='text'], select{padding:9px 10px;border:1px solid #d5dbe3;border-radius:10px;min-width:120px}
   input[disabled]{background:#f3f3f3;color:#666}
@@ -60,7 +61,7 @@
     @page { margin: 10mm }
     html, body { height: auto }
     body{ background:#fff; font-size: 12px }
-    header, .timerWrap, .controls, .help, .no-print { display:none !important }
+    header, .help, .no-print { display:none !important }
     .recordsWrap{ box-shadow:none; border:0; break-inside: avoid }
     table, thead, tbody, tr, td, th { page-break-inside: avoid !important; break-inside: avoid !important }
   }
@@ -69,11 +70,6 @@
 <body>
   <header>
     <div class="brand"><div class="badge">TM</div><div>Toastmasters Timer</div></div>
-    <div class="row controls">
-      <button id="btn-print" class="btn" title="Export to PDF">Export PDF</button>
-      <button id="reset" class="btn" title="R">Reset</button>
-      <button id="start" class="btn primary" title="Space" disabled>Start</button>
-    </div>
   </header>
 
   <main>
@@ -84,14 +80,22 @@
           <div class="chip" id="status">Ready</div>
           <div class="digits" id="digits">00:00</div>
         </div>
+
         <div class="panel">
+          <!-- Controls below display square -->
+          <div class="row buttons">
+            <button id="reset" class="btn" title="R">Reset</button>
+            <button id="start" class="btn primary" title="Space" disabled>Start</button>
+            <button id="btn-print" class="btn" title="Export to PDF">Export PDF</button>
+          </div>
+          <!-- Speaker and record buttons -->
           <div class="row">
             <label>Speaker Name</label>
             <input id="speaker" type="text" placeholder="e.g., Jane Doe" autocomplete="off"/>
             <button id="mark" class="btn" title="Mark a split">Mark</button>
             <button id="addRecord" class="btn" title="Add to table">Add Record</button>
           </div>
-
+          <!-- Presets and timings -->
           <div class="row">
             <label for="preset">Preset</label>
             <select id="preset">
@@ -105,10 +109,10 @@
             <label>Yellow</label><input id="yMin" type="text" value="01:30" disabled title="Set by preset"/>
             <label>Red</label><input id="rMin" type="text" value="02:00" disabled title="Set by preset"/>
           </div>
-
+          <!-- Qualify window and error messages -->
           <div id="qualWindow" class="qual">Qualifies: 00:30 &ndash; 02:30</div>
           <div id="err" class="err" style="display:none"></div>
-
+          <!-- Shortcuts description -->
           <div class="help">
             <span class="kbd">Space</span> start/pause &middot; <span class="kbd">R</span> reset &middot;
             <span class="kbd">F</span> fullscreen &middot; <span class="kbd">1-5</span> presets (1=TT,2=EV,3=IB,4=5-7,5=Custom)<br>
@@ -116,7 +120,7 @@
           </div>
         </div>
       </section>
-
+      <!-- Records section -->
       <section class="card recordsWrap">
         <div class="panel">
           <div class="row"><strong>Recorded Times</strong> <span class="muted">(click the badge to toggle Qualified)</span></div>
@@ -142,11 +146,8 @@
         markBtn=$('mark'), addBtn=$('addRecord'), speakerEl=$('speaker'),
         focusBox=$('tm-focus'), btnPrint=$('btn-print'), qualDiv=$('qualWindow'),
         errDiv=$('err');
-
   const recordsTbody = $('records').querySelector('tbody');
-
-  let running=false, startTs=0, acc=0, raf=0, laps=[];
-
+  let running=false, startTs=0, acc=0, raf=0;
   const PRESETS = {
     TT:  { g:'01:00', y:'01:30', r:'02:00', label:'Table Topics 1-2' },
     EV:  { g:'02:00', y:'02:30', r:'03:00', label:'Evaluation 2-3' },
@@ -154,16 +155,12 @@
     S57: { g:'05:00', y:'06:00', r:'07:00', label:'Speech 5-7' },
     CUST:{ g:'01:00', y:'01:30', r:'02:00', label:'Custom' }
   };
-
   function updateStartEnabled(){
     const okName = (speakerEl.value||'').trim().length>0;
     const okTimes = validateTimes(presetEl.value==='CUST');
     startBtn.disabled = !(okName && okTimes);
   }
-
-  function savePrefs(){
-    localStorage.setItem('tm_timer_prefs', JSON.stringify({ preset:presetEl.value, g:gEl.value, y:yEl.value, r:rEl.value }));
-  }
+  function savePrefs(){ localStorage.setItem('tm_timer_prefs', JSON.stringify({ preset:presetEl.value, g:gEl.value, y:yEl.value, r:rEl.value })); }
   function loadPrefs(){
     try{
       const p=JSON.parse(localStorage.getItem('tm_timer_prefs')||'{}');
@@ -172,189 +169,41 @@
     }catch(e){}
     applyPreset(presetEl.value, true);
   }
-
-  function setEditable(edit){
-    [gEl,yEl,rEl].forEach(el=>{ el.disabled=!edit; el.title = edit ? 'mm:ss' : 'Set by preset'; });
-  }
-
-  function applyPreset(code, onLoad=false){
-    const pre = PRESETS[code] || PRESETS.TT;
-    if(code!=='CUST'){
-      gEl.value = pre.g; yEl.value = pre.y; rEl.value = pre.r;
-      setEditable(false);
-    } else {
-      setEditable(true);
-    }
-    updateQualWindow();
-    if(!onLoad) savePrefs();
-    paint(0);
-    validateTimes(code==='CUST');
-    updateStartEnabled();
-  }
-
-  function thresholds(){
-    return { g:toSec(gEl.value), y:toSec(yEl.value), r:toSec(rEl.value) };
-  }
-
-  function updateQualWindow(){
-    const t = thresholds();
-    if(Number.isNaN(t.g)||Number.isNaN(t.r)){ qualDiv.textContent = 'Qualifies: --:-- - --:--'; return; }
-    const lower = Math.max(0, t.g - 30);
-    const upper = t.r + 30;
-    qualDiv.textContent = 'Qualifies: ' + toMMSS(lower) + ' - ' + toMMSS(upper);
-  }
-
+  function setEditable(edit){ [gEl,yEl,rEl].forEach(el=>{ el.disabled=!edit; el.title = edit ? 'mm:ss' : 'Set by preset'; }); }
+  function applyPreset(code,onLoad=false){ const pre=PRESETS[code]||PRESETS.TT; if(code!=='CUST'){ gEl.value=pre.g; yEl.value=pre.y; rEl.value=pre.r; setEditable(false);} else { setEditable(true); } updateQualWindow(); if(!onLoad) savePrefs(); paint(0); validateTimes(code==='CUST'); updateStartEnabled(); }
+  function thresholds(){ return { g:toSec(gEl.value), y:toSec(yEl.value), r:toSec(rEl.value) }; }
+  function updateQualWindow(){ const t=thresholds(); if(Number.isNaN(t.g)||Number.isNaN(t.r)){ qualDiv.textContent='Qualifies: --:-- - --:--'; return; } const lower=Math.max(0,t.g-30); const upper=t.r+30; qualDiv.textContent='Qualifies: '+toMMSS(lower)+' - '+toMMSS(upper); }
   function now(){ return performance.now(); }
-  function curSec(){ const ms = running ? (acc+(now()-startTs)) : acc; return Math.floor(ms/1000); }
-
-  function start(){
-    if(startBtn.disabled){
-      alert('Please enter the Speaker Name and valid Custom timings (if Custom) before starting.');
-      return;
-    }
-    if(running){ pause(); return; }
-    running=true; startTs=now();
-    status.textContent='Running'; startBtn.textContent='Pause';
-    tick();
-  }
-  function pause(){
-    if(!running) return;
-    running=false; acc+=now()-startTs;
-    cancelAnimationFrame(raf);
-    status.textContent='Paused'; startBtn.textContent='Start';
-  }
-  function reset(){
-    running=false; startTs=0; acc=0; laps=[];
-    cancelAnimationFrame(raf);
-    status.textContent='Ready'; startBtn.textContent='Start';
-    paint(0);
-  }
-  function mark(){ laps.push(curSec()); }
-
-  function paint(force=null){
-    const t = thresholds();
-    const s = force!==null ? force : curSec();
-    digits.textContent = toMMSS(s);
-    let bg='transparent';
-    if(!Number.isNaN(t.g) && !Number.isNaN(t.y) && !Number.isNaN(t.r)){
-      if(s>=t.r) bg='var(--red)';
-      else if(s>=t.y) bg='var(--yellow)';
-      else if(s>=t.g) bg='var(--green)';
-    }
-    square.style.backgroundColor = bg;
-  }
+  function curSec(){ const ms=running? (acc+(now()-startTs)) : acc; return Math.floor(ms/1000); }
+  function reallyStart(){ running=true; startTs=now(); status.textContent='Running'; startBtn.textContent='Pause'; tick(); }
+  function startOrPause(){ if(startBtn.disabled){ alert('Please enter the Speaker Name and valid Custom timings (if Custom) before starting.'); return; } if(running){ pause(); } else { reallyStart(); } }
+  function pause(){ if(!running) return; running=false; acc+=now()-startTs; cancelAnimationFrame(raf); status.textContent='Paused'; startBtn.textContent='Start'; }
+  function reset(){ running=false; startTs=0; acc=0; cancelAnimationFrame(raf); status.textContent='Ready'; startBtn.textContent='Start'; paint(0); }
+  function mark(){ /* record split times not displayed */ }
+  function paint(force=null){ const t=thresholds(); const s=(force!==null?force:curSec()); digits.textContent=toMMSS(s); let bg='transparent'; if(!Number.isNaN(t.g)&&!Number.isNaN(t.y)&&!Number.isNaN(t.r)){ if(s>=t.r) bg='var(--red)'; else if(s>=t.y) bg='var(--yellow)'; else if(s>=t.g) bg='var(--green)'; } square.style.backgroundColor=bg; }
   function tick(){ paint(); raf=requestAnimationFrame(tick); }
-
-  function isQualified(sec){
-    const t = thresholds();
-    const lower = Math.max(0, t.g - 30);
-    const upper = t.r + 30;
-    return sec >= lower && sec <= upper;
-  }
-
-  const records = [];
-  function addRecord(){
-    const code = presetEl.value;
-    const name = (speakerEl.value||'').trim();
-    const type = PRESETS[code]?.label || 'Speech';
-    const seconds = curSec();
-    const mmss = toMMSS(seconds);
-    const q = isQualified(seconds);
-    const row = {name,type,mmss,qualified:q};
-    records.push(row);
-    renderRecords();
-    speakerEl.value='';
-    updateStartEnabled();
-  }
-
-  function renderRecords(){
-    recordsTbody.innerHTML='';
-    records.forEach((r,i)=>{
-      const tr=document.createElement('tr');
-      const qClass = r.qualified ? 'q-yes' : 'q-no';
-      const qText  = r.qualified ? 'Qualified' : 'Not Qualified';
-      tr.innerHTML = `
-        <td>${i+1}</td>
-        <td>${r.name||'-'}</td>
-        <td>${r.type}</td>
-        <td>${r.mmss}</td>
-        <td><span class="q-badge ${qClass}" data-idx="${i}">${qText}</span></td>
-      `;
-      recordsTbody.appendChild(tr);
-    });
-  }
-  recordsTbody.addEventListener('click', (e)=>{
-    const el = e.target.closest('.q-badge'); if(!el) return;
-    const idx = +el.dataset.idx; if(isNaN(idx)) return;
-    records[idx].qualified = !records[idx].qualified;
-    renderRecords();
-  });
-
-  // Custom timing validation
-  function validateTimes(isCustom){
-    errDiv.style.display='none'; errDiv.textContent='';
-    if(!isCustom){ return true; }
-    const g = toSec(gEl.value), y = toSec(yEl.value), r = toSec(rEl.value);
-    if([g,y,r].some(v=>Number.isNaN(v))){ err('Please enter times as mm:ss (e.g., 04:00).'); return false; }
-    if(g < 60){ err('Green must be at least 01:00.'); return false; }
-    if(y <= g + 30){ err('Yellow must be more than 30 seconds after Green.'); return false; }
-    if(r <= y + 30){ err('Red must be more than 30 seconds after Yellow.'); return false; }
-    updateQualWindow();
-    savePrefs();
-    return true;
-  }
-  function err(msg){
-    errDiv.textContent = msg;
-    errDiv.style.display='block';
-  }
-
-  presetEl.addEventListener('change', e=>applyPreset(e.target.value));
-  ['input','change','blur'].forEach(ev=>{
-    gEl.addEventListener(ev, ()=>{ if(presetEl.value==='CUST'){ validateTimes(true); updateStartEnabled(); paint(); }});
-    yEl.addEventListener(ev, ()=>{ if(presetEl.value==='CUST'){ validateTimes(true); updateStartEnabled(); paint(); }});
-    rEl.addEventListener(ev, ()=>{ if(presetEl.value==='CUST'){ validateTimes(true); updateStartEnabled(); paint(); }});
-  });
-
-  startBtn.addEventListener('click', start);
-  resetBtn.addEventListener('click', reset);
-  markBtn.addEventListener('click', mark);
-  addBtn.addEventListener('click', addRecord);
-  speakerEl.addEventListener('input', updateStartEnabled);
-
-  function isTypingTarget(ev){
-    const t = ev.target;
-    return t && (t.tagName==='INPUT' || t.tagName==='SELECT' || t.tagName==='TEXTAREA' || t.isContentEditable);
-  }
-  function isSpaceKey(e){
-    const k = (e.key||'').toLowerCase();
-    return e.code === 'Space' || k === ' ' || k === 'spacebar';
-  }
-  function onKey(e){
-    if(e.repeat) return;
-    if(isTypingTarget(e)) return;
-    if(isSpaceKey(e)){
-      e.preventDefault();
-      start();
-      return;
-    }
-    const k = (e.key||'').toLowerCase();
-    if(k==='r'){ reset(); }
-    else if(k==='f'){ try{ if(!document.fullscreenElement){ document.documentElement.requestFullscreen?.(); } else { document.exitFullscreen?.(); } }catch(_){} }
-    else if(['1','2','3','4','5'].includes(k)){
-      const map = { '1':'TT', '2':'EV', '3':'IB', '4':'S57', '5':'CUST' };
-      presetEl.value = map[k]; applyPreset(map[k]);
-    }
-  }
-  document.addEventListener('keydown', onKey, true);
-  window.addEventListener('keydown', onKey, true);
-
-  window.addEventListener('pointerdown', ()=>{ try{ $('tm-focus').focus(); }catch(_e){} }, { once:false, capture:true });
-
-  btnPrint.addEventListener('click', ()=>window.print());
-
-  loadPrefs();
-  updateStartEnabled();
-  reset();
+  function isQualified(sec){ const t=thresholds(); const lower=Math.max(0,t.g-30), upper=t.r+30; return sec>=lower && sec<=upper; }
+  const records=[];
+  function addRecord(){ const code=presetEl.value; const name=(speakerEl.value||'').trim(); const type=PRESETS[code]?.label||'Speech'; const seconds=curSec(); const mmss=toMMSS(seconds); const q=isQualified(seconds); records.push({name,type,mmss,qualified:q}); renderRecords(); speakerEl.value=''; updateStartEnabled(); }
+  function renderRecords(){ recordsTbody.innerHTML=''; records.forEach((r,i)=>{ const tr=document.createElement('tr'); const qClass=r.qualified?'q-yes':'q-no'; const qText=r.qualified?'Qualified':'Not Qualified'; tr.innerHTML=`<td>${i+1}</td><td>${r.name||'-'}</td><td>${r.type}</td><td>${r.mmss}</td><td><span class="q-badge ${qClass}" data-idx="${i}">${qText}</span></td>`; recordsTbody.appendChild(tr); }); }
+  recordsTbody.addEventListener('click',e=>{ const el=e.target.closest('.q-badge'); if(!el) return; const idx=+el.dataset.idx; if(isNaN(idx)) return; records[idx].qualified=!records[idx].qualified; renderRecords(); });
+  function validateTimes(isCustom){ errDiv.style.display='none'; errDiv.textContent=''; if(!isCustom) return true; const g=toSec(gEl.value), y=toSec(yEl.value), r=toSec(rEl.value); if([g,y,r].some(v=>Number.isNaN(v))){ err('Please enter times as mm:ss (e.g., 04:00).'); return false; } if(g<60){ err('Green must be at least 01:00.'); return false; } if(y<=g+30){ err('Yellow must be more than 30 seconds after Green.'); return false; } if(r<=y+30){ err('Red must be more than 30 seconds after Yellow.'); return false; } updateQualWindow(); savePrefs(); return true; }
+  function err(msg){ errDiv.textContent=msg; errDiv.style.display='block'; }
+  presetEl.addEventListener('change',e=>applyPreset(e.target.value));
+  ['input','change','blur'].forEach(ev=>{ gEl.addEventListener(ev,()=>{ if(presetEl.value==='CUST'){ validateTimes(true); updateStartEnabled(); paint(); }}); yEl.addEventListener(ev,()=>{ if(presetEl.value==='CUST'){ validateTimes(true); updateStartEnabled(); paint(); }}); rEl.addEventListener(ev,()=>{ if(presetEl.value==='CUST'){ validateTimes(true); updateStartEnabled(); paint(); }}); });
+  startBtn.addEventListener('click',startOrPause);
+  resetBtn.addEventListener('click',reset);
+  markBtn.addEventListener('click',mark);
+  addBtn.addEventListener('click',addRecord);
+  speakerEl.addEventListener('input',updateStartEnabled);
+  function isTypingTarget(ev){ const t=ev.target; return t && (t.tagName==='INPUT'||t.tagName==='SELECT'||t.tagName==='TEXTAREA'||t.isContentEditable); }
+  function isSpaceKey(e){ const k=(e.key||'').toLowerCase(); return e.code==='Space'||k===' '||k==='spacebar'; }
+  function onKey(e){ if(isTypingTarget(e)) return; if(isSpaceKey(e)){ e.preventDefault(); startOrPause(); return; } const k=(e.key||'').toLowerCase(); if(k==='r'){ reset(); } else if(k==='f'){ try{ if(!document.fullscreenElement){ document.documentElement.requestFullscreen?.(); } else { document.exitFullscreen?.(); } } catch(_){} } else if(['1','2','3','4','5'].includes(k)){ const map={'1':'TT','2':'EV','3':'IB','4':'S57','5':'CUST'}; presetEl.value=map[k]; applyPreset(map[k]); } }
+  // Listen on both keydown and keyup to capture space reliably
+  ['keydown','keyup'].forEach(evt=>{ document.addEventListener(evt,onKey,true); window.addEventListener(evt,onKey,true); });
+  window.addEventListener('pointerdown',()=>{ try{ $('tm-focus').focus(); } catch(_){} },{capture:true});
+  btnPrint.addEventListener('click',()=>window.print());
+  loadPrefs(); updateStartEnabled(); reset();
 })();
 </script>
 </body>
